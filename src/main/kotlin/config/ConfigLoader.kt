@@ -10,6 +10,8 @@ object ConfigLoader {
         data class Error(val errors: List<String>): Result
     }
 
+    private fun isHttpUrl(s: String) = s.startsWith("http://") || s.startsWith("https://")
+
     fun load(path: String): Result {
         val file = File(path)
         if (!file.exists()) {
@@ -17,16 +19,11 @@ object ConfigLoader {
         }
 
         val map = mutableMapOf<String, String>()
-        file.readLines().forEachIndexed { idx, raw ->
+        file.readLines().forEachIndexed { _, raw ->
             val line = raw.trim()
             if (line.isEmpty() || line.startsWith("#")) return@forEachIndexed
             val firstComma = line.indexOf(',')
-            if (firstComma <= 0 || firstComma == line.lastIndex) {
-                // Берём всё после первой запятой как значение (может содержать запятые)
-                if (firstComma < 0) {
-                    return@forEachIndexed
-                }
-            }
+            if (firstComma < 0) return@forEachIndexed
             val key = line.take(firstComma).trim()
             val value = line.substring(firstComma + 1).trim()
             if (key.isEmpty()) return@forEachIndexed
@@ -44,15 +41,17 @@ object ConfigLoader {
             return v
         }
 
-        val packageName = requireKey("packageName")?.also {
-            if (!it.matches(Regex("[A-Za-z0-9_.-]+"))) {
-                errors += "Недопустимое значение packageName: '$it'"
+        val packageName = requireKey("packageName")?.also { spec ->
+            // Ожидаем groupId:artifactId:version
+            val parts = spec.split(':')
+            val partRe = Regex("[A-Za-z0-9_.-]+")
+            if (parts.size != 3 || parts.any { it.isBlank() || !partRe.matches(it) }) {
+                errors += "packageName должен быть в формате groupId:artifactId:version, получено: '$spec'"
             }
         }
 
         val repoPath = requireKey("repoPath")?.also {
-            if (it.startsWith("http://") || it.startsWith("https://")) {
-                // Проверим валидность URI
+            if (isHttpUrl(it)) {
                 runCatching { URI(it) }.onFailure { e ->
                     errors += "Невалидный URL repoPath: ${e.message}"
                 }
@@ -66,7 +65,7 @@ object ConfigLoader {
         val testRepoMode = testRepoModeRaw?.let {
             runCatching { TestRepoMode.valueOf(it.uppercase()) }
                 .getOrElse {
-                    errors += "Недопустимый testRepoMode: '$testRepoModeRaw' (ожидаются: ${TestRepoMode.values().joinToString()})"
+                    errors += "Недопустимый testRepoMode: '$testRepoModeRaw' (ожидаются: ${TestRepoMode.entries.joinToString()})"
                     null
                 }
         }

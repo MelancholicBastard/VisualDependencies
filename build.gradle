@@ -23,7 +23,6 @@ kotlin {
 
 application {
     mainClass.set("com.melancholicbastard.MainKt")
-//    mainClass = 'MainKt'
 }
 
 // Удобный ярлык для локального репозитория
@@ -35,11 +34,11 @@ tasks.register("runLocalConfig", JavaExec) {
     args("--config=src/main/resources/config.local.csv")
 }
 
-// Удобный ярлык для git-репозитория (URL)
-tasks.register("runGitConfig", JavaExec) {
+// Удобный ярлык для URL
+tasks.register("runUrlConfig", JavaExec) {
     group = "application"
-    description = "Run with src/main/resources/config.git.csv"
+    description = "Run with src/main/resources/config.url.csv"
     classpath = sourceSets.main.runtimeClasspath
     mainClass = application.mainClass.get()
-    args("--config=src/main/resources/config.git.csv")
+    args("--config=src/main/resources/config.url.csv")
 }

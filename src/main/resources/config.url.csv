@@ -1,0 +1,6 @@
+# Конфигурация для Maven Central
+packageName,org.apache.commons:commons-lang3:3.14.0
+repoPath,https://repo1.maven.org/maven2
+testRepoMode,URL
+outputImage,graph.png
+maxDepth,5
