@@ -1,0 +1,5 @@
+packageName,my-lib
+repoPath,https://github.com/example/test-repo.git
+testRepoMode,GIT
+outputImage,graph.png
+maxDepth,5

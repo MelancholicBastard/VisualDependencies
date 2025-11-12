@@ -1,0 +1,45 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '2.2.0'
+    id 'application'
+}
+
+group = 'com.melancholicbastard'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+}
+
+test {
+    useJUnitPlatform()
+}
+kotlin {
+    jvmToolchain(24)
+}
+
+application {
+    mainClass.set("com.melancholicbastard.MainKt")
+//    mainClass = 'MainKt'
+}
+
+// Удобный ярлык для локального репозитория
+tasks.register("runLocalConfig", JavaExec) {
+    group = "application"
+    description = "Run with src/main/resources/config.local.csv"
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass.get()
+    args("--config=src/main/resources/config.local.csv")
+}
+
+// Удобный ярлык для git-репозитория (URL)
+tasks.register("runGitConfig", JavaExec) {
+    group = "application"
+    description = "Run with src/main/resources/config.git.csv"
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass.get()
+    args("--config=src/main/resources/config.git.csv")
+}

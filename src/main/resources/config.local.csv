@@ -1,0 +1,5 @@
+packageName,my-lib
+repoPath,.
+testRepoMode,LOCAL
+outputImage,graph.png
+maxDepth,5
