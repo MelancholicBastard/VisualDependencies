@@ -1,5 +1,5 @@
 packageName,A
-repoPath,src/main/resources/testrepo/cycle.txt
+repoPath,src/main/resources/testrepo/depth.txt
 testRepoMode,TEST
 outputImage,graph.png
 maxDepth,3

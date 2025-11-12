@@ -4,14 +4,17 @@ import com.melancholicbastard.config.ConfigLoader
 import com.melancholicbastard.config.TestRepoMode
 import com.melancholicbastard.maven.MavenCoordinates
 import com.melancholicbastard.graph.DependencyGraphBuilder
+import com.melancholicbastard.graph.LoadOrder
 import com.melancholicbastard.testrepo.TestRepository
 
 fun main(args: Array<String>) {
     val cfgPath = args.find { it.startsWith("--config=") }?.substringAfter("=")
+    val printOrder = args.any { it == "--print-order" }
     if (cfgPath == null) {
         System.err.println("Укажите --config=path/to/config.csv")
         kotlin.system.exitProcess(1)
     }
+
     val res = ConfigLoader.load(cfgPath)
     if (res is ConfigLoader.Result.Error) {
         System.err.println("Ошибки конфигурации:")
@@ -35,22 +38,29 @@ fun main(args: Array<String>) {
     }
 
     println("Root: ${graph.root}")
-    println("Всего вершин: ${graph.nodes.size}")
-    println("Всего рёбер: ${graph.edges.size}")
+    println("Вершин: ${graph.nodes.size}, рёбер: ${graph.edges.size}")
     if (graph.truncated.isNotEmpty())
-        println("Усечены по глубине: ${graph.truncated.joinToString()}")
+        println("Усечение по глубине на: ${graph.truncated.joinToString()}")
 
-    println("\nAdjacency (from -> to${'$'}{cycle?}):")
-    graph.edges.forEach {
-        val mark = if (it.cycle) " (cycle)" else ""
-        println("${it.from} -> ${it.to}$mark")
-    }
-
-    if (graph.cycles.isEmpty()) {
-        println("\nЦиклов не обнаружено")
+    if (printOrder) {
+        val order = LoadOrder.compute(graph)
+        println("\nПорядок загрузки зависимостей (дети → родитель):")
+        order.forEachIndexed { i, id -> println("${i + 1}. $id") }
+        if (graph.cycles.isNotEmpty()) {
+            println("\nВнимание: обнаружены циклы")
+        }
     } else {
-        println("\nЦиклические рёбра:")
-        graph.cycles.forEach { println("${it.from} -> ${it.to}") }
+        println("\nAdjacency (from -> to${'$'}{cycle?}):")
+        graph.edges.forEach {
+            val mark = if (it.cycle) " (cycle)" else ""
+            println("${it.from} -> ${it.to}$mark")
+        }
+        if (graph.cycles.isEmpty()) {
+            println("\nЦиклов не обнаружено")
+        } else {
+            println("\nЦиклические рёбра:")
+            graph.cycles.forEach { println("${it.from} -> ${it.to}") }
+        }
     }
 }
 
