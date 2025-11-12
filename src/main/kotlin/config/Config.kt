@@ -1,7 +1,5 @@
 package com.melancholicbastard.config
 
-enum class TestRepoMode { LOCAL, URL }
-
 data class Config(
     val packageName: String,
     val repoPath: String,

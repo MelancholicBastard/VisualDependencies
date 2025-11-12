@@ -14,73 +14,71 @@ object ConfigLoader {
 
     fun load(path: String): Result {
         val file = File(path)
-        if (!file.exists()) {
-            return Result.Error(listOf("Файл конфигурации не найден: $path"))
-        }
+        if (!file.exists()) return Result.Error(listOf("Файл конфигурации не найден: $path"))
 
         val map = mutableMapOf<String, String>()
-        file.readLines().forEachIndexed { _, raw ->
+        file.readLines().forEach { raw ->
             val line = raw.trim()
-            if (line.isEmpty() || line.startsWith("#")) return@forEachIndexed
-            val firstComma = line.indexOf(',')
-            if (firstComma < 0) return@forEachIndexed
-            val key = line.take(firstComma).trim()
-            val value = line.substring(firstComma + 1).trim()
-            if (key.isEmpty()) return@forEachIndexed
-            map[key] = value
+            if (line.isEmpty() || line.startsWith("#")) return@forEach
+            val i = line.indexOf(',')
+            if (i <= 0) return@forEach
+            map[line.take(i).trim()] = line.substring(i + 1).trim()
         }
 
         val errors = mutableListOf<String>()
 
-        fun requireKey(k: String): String? {
-            val v = map[k]
-            if (v == null || v.isBlank()) {
-                errors += "Отсутствует или пустой параметр '$k'"
-                return null
-            }
+        fun need(key: String): String? {
+            val v = map[key]
+            if (v.isNullOrBlank()) errors += "Отсутствует или пустой параметр '$key'"
             return v
         }
 
-        val packageName = requireKey("packageName")?.also { spec ->
-            // Ожидаем groupId:artifactId:version
-            val parts = spec.split(':')
-            val partRe = Regex("[A-Za-z0-9_.-]+")
-            if (parts.size != 3 || parts.any { it.isBlank() || !partRe.matches(it) }) {
-                errors += "packageName должен быть в формате groupId:artifactId:version, получено: '$spec'"
-            }
-        }
-
-        val repoPath = requireKey("repoPath")?.also {
-            if (isHttpUrl(it)) {
-                runCatching { URI(it) }.onFailure { e ->
-                    errors += "Невалидный URL repoPath: ${e.message}"
-                }
-            } else {
-                val rf = File(it)
-                if (!rf.exists()) errors += "Путь repoPath не существует: $it"
-            }
-        }
-
-        val testRepoModeRaw = requireKey("testRepoMode")
-        val testRepoMode = testRepoModeRaw?.let {
+        val rawMode = need("testRepoMode")
+        val mode = rawMode?.let {
             runCatching { TestRepoMode.valueOf(it.uppercase()) }
-                .getOrElse {
-                    errors += "Недопустимый testRepoMode: '$testRepoModeRaw' (ожидаются: ${TestRepoMode.entries.joinToString()})"
+                .getOrElse { e ->
+                    errors += "Недопустимый testRepoMode '$it': ${e.message}"
                     null
                 }
         }
 
-        val outputImage = requireKey("outputImage")?.also {
-            if (!it.matches(Regex("^[A-Za-z0-9_.-]+\\.(png|svg)$", RegexOption.IGNORE_CASE))) {
-                errors += "outputImage должен оканчиваться на .png или .svg: '$it'"
+        val packageName = need("packageName")?.also { spec ->
+            if (mode == TestRepoMode.TEST) {
+                if (!spec.matches(Regex("^[A-Z]+$"))) {
+                    errors += "В TEST режиме packageName должен быть заглавными буквами (напр. 'A' или 'ROOT'): '$spec'"
+                }
+            } else {
+                val parts = spec.split(':')
+                val partRe = Regex("[A-Za-z0-9_.-]+")
+                if (parts.size != 3 || parts.any { it.isBlank() || !partRe.matches(it) }) {
+                    errors += "packageName должен быть groupId:artifactId:version в обычном режиме: '$spec'"
+                }
             }
         }
 
-        val maxDepthRaw = requireKey("maxDepth")
+        val repoPath = need("repoPath")?.also {
+            if (mode == TestRepoMode.TEST) {
+                val f = File(it)
+                if (!f.exists()) errors += "TEST файл репозитория не найден: $it"
+            } else {
+                if (isHttpUrl(it)) {
+                    runCatching { URI(it) }.onFailure { e -> errors += "Невалидный URL repoPath: ${e.message}" }
+                } else {
+                    if (!File(it).exists()) errors += "Путь repoPath не существует: $it"
+                }
+            }
+        }
+
+        val outputImage = need("outputImage")?.also {
+            if (!it.matches(Regex("^[A-Za-z0-9_.-]+\\.(png|svg)$", RegexOption.IGNORE_CASE)))
+                errors += "outputImage должен оканчиваться на .png или .svg: '$it'"
+        }
+
+        val maxDepthRaw = need("maxDepth")
         val maxDepth = maxDepthRaw?.toIntOrNull()?.also {
-            if (it <= 0) errors += "maxDepth должен быть > 0: $it"
+            if (it <= 0) errors += "maxDepth должен быть > 0"
         } ?: run {
-            if (maxDepthRaw != null) errors += "maxDepth не целое число: '$maxDepthRaw'"
+            if (maxDepthRaw != null) errors += "maxDepth не целое число"
             null
         }
 
@@ -90,7 +88,7 @@ object ConfigLoader {
             Config(
                 packageName = packageName!!,
                 repoPath = repoPath!!,
-                testRepoMode = testRepoMode!!,
+                testRepoMode = mode!!,
                 outputImage = outputImage!!,
                 maxDepth = maxDepth!!
             )

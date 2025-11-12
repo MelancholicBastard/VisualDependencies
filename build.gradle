@@ -28,10 +28,10 @@ application {
 // Удобный ярлык для локального репозитория
 tasks.register("runLocalConfig", JavaExec) {
     group = "application"
-    description = "Run with src/main/resources/config.local.csv"
+    description = "Run with src/main/resources/config.test.csv"
     classpath = sourceSets.main.runtimeClasspath
     mainClass = application.mainClass.get()
-    args("--config=src/main/resources/config.local.csv")
+    args("--config=src/main/resources/config.test.csv")
 }
 
 // Удобный ярлык для URL
