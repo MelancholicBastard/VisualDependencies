@@ -11,7 +11,8 @@ repositories {
 }
 
 dependencies {
-    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+    implementation("guru.nidi:graphviz-java:0.18.1")
+    implementation("org.slf4j:slf4j-simple:2.0.7")
 }
 
 test {
@@ -34,11 +35,27 @@ tasks.register("runLocalConfig", JavaExec) {
     args("--config=src/main/resources/config.test.csv")
 }
 
-// Удобный ярлык для URL
-tasks.register("runUrlConfig", JavaExec) {
+// Удобные ярлыки для URL
+tasks.register("runUrl1Config", JavaExec) {
     group = "application"
-    description = "Run with src/main/resources/config.url.csv"
+    description = "Run with src/main/resources/config.url1.csv"
     classpath = sourceSets.main.runtimeClasspath
     mainClass = application.mainClass.get()
-    args("--config=src/main/resources/config.url.csv")
+    args("--config=src/main/resources/config.url1.csv")
+}
+
+tasks.register("runUrl2Config", JavaExec) {
+    group = "application"
+    description = "Run with src/main/resources/config.url2.csv"
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass.get()
+    args("--config=src/main/resources/config.url2.csv")
+}
+
+tasks.register("runUrl3Config", JavaExec) {
+    group = "application"
+    description = "Run with src/main/resources/config.url3.csv"
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = application.mainClass.get()
+    args("--config=src/main/resources/config.url3.csv")
 }

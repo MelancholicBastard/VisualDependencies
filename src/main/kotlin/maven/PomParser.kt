@@ -7,13 +7,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 object PomParser {
 
-    data class ProjectInfo(
-        val groupId: String?,
-        val artifactId: String?,
-        val version: String?,
-        val properties: Map<String, String>
-    )
-
+    // Парсинг прямых зависимостей из POM файла
     fun parseDirectDependencies(pomXml: String): List<Dependency> {
         val doc = newSecureFactory().newDocumentBuilder()
             .parse(ByteArrayInputStream(pomXml.toByteArray(Charsets.UTF_8)))
@@ -26,11 +20,13 @@ object PomParser {
         val projVersion = project.getText("version") ?: parentEl?.getText("version")
 
         val props = mutableMapOf<String, String>()
-        // project.* для плейсхолдеров
+
+        // Сбор свойств проекта для подстановки в плейсхолдеры
         projGroup?.let { props["project.groupId"] = it }
         projArtifact?.let { props["project.artifactId"] = it }
         projVersion?.let { props["project.version"] = it }
-        // <properties>
+
+        // Парсинг секции <properties>
         project.getFirst("properties")?.let { propsEl ->
             propsEl.childNodes.let { nodes ->
                 for (i in 0 until nodes.length) {
@@ -44,6 +40,7 @@ object PomParser {
             }
         }
 
+        // Парсинг секции <dependencies>
         val depsRoot = project.getFirst("dependencies") ?: return emptyList()
         val out = mutableListOf<Dependency>()
         depsRoot.childNodes.let { nodes ->
@@ -62,6 +59,7 @@ object PomParser {
         return out
     }
 
+    // Разрешение плейсхолдеров вида ${property.name}
     private fun resolve(s: String, props: Map<String, String>): String {
         var result = s
         var guard = 0
@@ -77,6 +75,7 @@ object PomParser {
         return result
     }
 
+    // Поиск первого дочернего элемента по имени тега
     private fun Element.getFirst(tag: String): Element? {
         val list = this.getElementsByTagName(tag)
         return (0 until list.length)
@@ -86,9 +85,11 @@ object PomParser {
             .firstOrNull { it.parentNode == this }
     }
 
+    // Получение текстового содержимого элемента
     private fun Element.getText(tag: String): String? =
         getFirst(tag)?.textContent?.trim()?.takeIf { it.isNotEmpty() }
 
+    // Создание фабрики для парсинга XML
     private fun newSecureFactory(): DocumentBuilderFactory {
         val f = DocumentBuilderFactory.newInstance()
         f.isNamespaceAware = false

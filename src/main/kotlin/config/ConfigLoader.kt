@@ -3,6 +3,7 @@ package com.melancholicbastard.config
 import java.io.File
 import java.net.URI
 
+// Объект для загрузки конфигурации
 object ConfigLoader {
 
     sealed interface Result {
@@ -16,9 +17,11 @@ object ConfigLoader {
         val file = File(path)
         if (!file.exists()) return Result.Error(listOf("Файл конфигурации не найден: $path"))
 
+        // Парсинг CSV-файла в map ключ-значение
         val map = mutableMapOf<String, String>()
         file.readLines().forEach { raw ->
             val line = raw.trim()
+            // Пропускаем пустые строки и комментарии
             if (line.isEmpty() || line.startsWith("#")) return@forEach
             val i = line.indexOf(',')
             if (i <= 0) return@forEach
@@ -27,6 +30,7 @@ object ConfigLoader {
 
         val errors = mutableListOf<String>()
 
+        // Вспомогательная функция для заполнения списка ошибок при несоответствии типов
         fun need(key: String): String? {
             val v = map[key]
             if (v.isNullOrBlank()) errors += "Отсутствует или пустой параметр '$key'"
@@ -35,6 +39,7 @@ object ConfigLoader {
 
         val rawMode = need("testRepoMode")
         val mode = rawMode?.let {
+            // Определение mode как null, TEST или URL
             runCatching { TestRepoMode.valueOf(it.uppercase()) }
                 .getOrElse { e ->
                     errors += "Недопустимый testRepoMode '$it': ${e.message}"
@@ -70,8 +75,8 @@ object ConfigLoader {
         }
 
         val outputImage = need("outputImage")?.also {
-            if (!it.matches(Regex("^[A-Za-z0-9_.-]+\\.(png|svg)$", RegexOption.IGNORE_CASE)))
-                errors += "outputImage должен оканчиваться на .png или .svg: '$it'"
+            if (!it.matches(Regex("^[A-Za-z0-9_.-]+\\.svg$", RegexOption.IGNORE_CASE)))
+                errors += "outputImage должен оканчиваться на .svg: '$it'"
         }
 
         val maxDepthRaw = need("maxDepth")
@@ -82,6 +87,7 @@ object ConfigLoader {
             null
         }
 
+        // Если набралась хотя бы одна ошибка
         if (errors.isNotEmpty()) return Result.Error(errors)
 
         return Result.Ok(

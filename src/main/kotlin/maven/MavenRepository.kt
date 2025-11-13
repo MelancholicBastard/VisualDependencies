@@ -3,19 +3,20 @@ package com.melancholicbastard.maven
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
-import java.net.URL
 import java.net.URI
 
 object MavenRepository {
 
+    // Загрузка POM файла из репозитория
     fun loadPom(repoPath: String, coords: MavenCoordinates): String {
         return if (repoPath.startsWith("http://") || repoPath.startsWith("https://")) {
-            fetchRemotePom(repoPath, coords)
+            fetchRemotePom(repoPath, coords)    // Удаленный репозиторий
         } else {
-            readLocalPom(repoPath, coords)
+            readLocalPom(repoPath, coords)      // Локальный репозиторий
         }
     }
 
+    // Загрузка POM из удаленного репозитория по HTTP
     private fun fetchRemotePom(baseUrl: String, coords: MavenCoordinates): String {
         val normalized = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
         val url = URI(normalized + coords.toPomPath()).toURL()
@@ -33,6 +34,7 @@ object MavenRepository {
         return conn.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
     }
 
+    // Чтение POM из локальной файловой системы
     private fun readLocalPom(baseDir: String, coords: MavenCoordinates): String {
         val file = File(baseDir).resolve(coords.toPomPath())
         if (!file.exists()) {
