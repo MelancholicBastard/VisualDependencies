@@ -1,5 +1,5 @@
 packageName,A
 repoPath,src/main/resources/testrepo/depth.txt
 testRepoMode,TEST
-outputImage,graph.png
+outputImage,graph.svg
 maxDepth,3
